@@ -43,4 +43,4 @@ Run the below command :
 ```
 python train.py --data data/covid-19-data/ --rootpath . --preddays 2 --test F
 ```
-The output can be seen with date stamp.
+The output can be seen in `out` directory with a date stamp.
