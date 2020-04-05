@@ -42,9 +42,9 @@ parser.add_option('-g', '--valsize', action="store", dest="valsize", help="Valid
 
 options, args = parser.parse_args()
 
-print('Load params')
-for (k,v) in options.__dict__.items():
-    print('{}{}'.format(k.ljust(20), v))
+#print('Load params')
+#for (k,v) in options.__dict__.items():
+#    print('{}{}'.format(k.ljust(20), v))
     
 ROOTPATH = options.rootpath
 DATAPATH = options.datapath
