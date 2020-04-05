@@ -60,9 +60,9 @@ sys.path.append(ROOTPATH)
 DATAPATH = os.path.join(ROOTPATH, "data/covid-19-data/")
 OUTPATH = os.path.join(ROOTPATH, "out")
 TEST_DURATION = 2 # days
-TEST = False#True
+TEST = True
 randomState = 42
-valSize = 0.0 # 0.1
+valSize = 0.1
 '''
 
 sys.path.append(ROOTPATH)
@@ -132,6 +132,7 @@ for offset in range(0,8):
 
 alldf['new_cases'] = np.nan
 idx = alldf['type'] == "train"
+alldf.loc[idx, 'new_cases'] = alldf[idx].groupby(geocols)['cases'].diff(1).fillna(0)
 # alldf.sort_values(['county', 'month', 'day'])[alldf.columns[:10].tolist()+['new_cases']].head(100)
 # alldf.sort_values(['county', 'month', 'day']).head(80).tail(10).transpose()
 
@@ -140,7 +141,7 @@ Re split datasets
 '''
 trndf = alldf.query('type == "train"')
 tstdf = alldf.query('type == "test"').set_index('fcstidx').loc[y_tst.fcstidx]
-ytrndf = trndf[['cases', 'deaths']]
+ytrndf = trndf[['cases', 'new_cases', 'deaths']]
 
 # Final validation
 X_train, X_val, y_train, y_val = train_test_split(trndf, ytrndf, \
@@ -169,28 +170,44 @@ clf = RandomizedSearchCV(estimator = regrMdl,
                          verbose=1, 
                          random_state=randomState, 
                          n_jobs = -1)
-clf.fit(X_train, y_train.cases)
+clf.fit(X_train, y_train.new_cases)
 if valSize>0:
     y_predval = clf.predict(X_val)
 y_predtst = clf.predict(X_test)
+
+predcols = geocols + ['date', 'cases', 'new_cases', 'deaths', 'type']
+predtst = pd.concat([trndf[predcols], tstdf[predcols]], 0)
+predtst.loc[predtst['type']=='test', 'new_cases'] = np.around(y_predtst)
+predtst = predtst.sort_values(['state', 'county', 'fips', 'date'])
+predtst['cases'] = predtst.groupby(geocols)['new_cases'].cumsum()
+predtst = predtst.query('type == "test"').loc[tstdf.index]
 
 if TEST:
     if valSize>0:
         print(f'Val MAE   : {mae(y_val.cases.values, y_predval):.4f}')
         print(f'Val RMSE  : {rmse(y_val.cases.values, y_predval):.4f}')
-    print(f'Test MAE  : {mae(y_tst.cases.values, y_predtst):.4f}')
-    print(f'Test RMSE : {rmse(y_tst.cases.values, y_predtst):.4f}')
+    # print(f'Test MAE  : {mae(y_tst.cases.values, y_predtst):.4f}')
+    # print(f'Test RMSE : {rmse(y_tst.cases.values, y_predtst):.4f}')
+    print(f'Test MAE  : {mae(y_tst.cases.values, predtst.cases.values):.4f}')
+    print(f'Test RMSE : {rmse(y_tst.cases.values, predtst.cases.values):.4f}')
 else:
     tstdf['cases'] = y_predtst
     outcols = geocols + ['date', 'cases', 'type']
-    preddf = pd.concat([trndf, tstdf], 0)[outcols]
+    preddf = pd.concat([trndf, predtst], 0)[outcols]
     preddf['cases'] = preddf['cases'].clip(0, 999999999).astype(np.int32)
     preddf = preddf.sort_values(geocols+['date']).reset_index(drop=True)
     today = date.today().strftime("%m%d%Y")
     fname = os.path.join(OUTPATH, f'forecast_{TEST_DURATION}day_{today}.csv')
     preddf.to_csv(fname, index = False)
     
-    
+'''
+Fitting 3 folds for each of 1 candidates, totalling 3 fits
+[Parallel(n_jobs=-1)]: Done   3 out of   3 | elapsed:   21.0s finished
+Val MAE   : 1.4122
+Val RMSE  : 1677.1336
+Test MAE  : 16.1159
+Test RMSE : 54440.4150
+'''
 
 '''
 tstdf['pred_cases'] = y_predtst
