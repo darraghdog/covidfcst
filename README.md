@@ -1,5 +1,11 @@
 ## John Hopkins COVID county forecasting
 
+### Install
+```
+git clone https://github.com/darraghdog/covidfcst
+cd covidfcst
+```
+
 ### Connect to data set
 
 To connect to the data set first time, clone the repo.   
