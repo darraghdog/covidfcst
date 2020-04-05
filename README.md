@@ -25,7 +25,10 @@ python train.py --data data/covid-19-data/ --rootpath . --preddays 2 --test T
 
 The output should be like :  
 ```
-
+Fitting 3 folds for each of 1 candidates, totalling 3 fits
+[Parallel(n_jobs=-1)]: Done   3 out of   3 | elapsed:   51.7s finished
+Test MAE  : 15.8795
+Test RMSE : 53894.1347
 ```
 
 ### To predict every county for next two days
