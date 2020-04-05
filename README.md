@@ -37,4 +37,4 @@ Run the below command :
 ```
 python train.py --data data/covid-19-data/ --rootpath . --preddays 2 --test F
 ```
-The output can be seen with date steamp
+The output can be seen with date stamp.
